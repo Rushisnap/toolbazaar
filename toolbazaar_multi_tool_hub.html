@@ -774,7 +774,7 @@
                 usesCount: '31.0k runs',
                 icon: 'file-image',
                 gradient: 'from-red-600 via-rose-600 to-pink-600',
-                description: 'Upload one or multiple images specifically to this tool, arrange their sequence, select page orientation/margins, and generate a crisp PDF.',
+                description: 'Upload one or multiple images specifically to this tool, arrange their sequence, select page orientation/margins, and generate a compressed PDF.',
                 features: ['Multi-Image Upload', 'Page Orientation', 'Reorder Pages']
             },
             {
@@ -2546,77 +2546,30 @@
         /********************************************************************
          * 10. PDF TOOL 1: IMAGE TO PDF DOCUMENT BUILDER
          ********************************************************************/
-        function renderImgToPdfTool(mount) {
-            const st = isolatedToolStates['pdf-img2pdf'];
-            mount.innerHTML = `
-                <div class="space-y-6">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
-                        <div>
-                            <span class="text-[11px] font-bold uppercase tracking-wider text-red-600">PDF Department • Tool #1</span>
-                            <h3 class="text-lg font-extrabold text-slate-900">Image to PDF Converter (फोटो से पीडीएफ)</h3>
-                            <p class="text-xs text-slate-500">Upload one or more photos specifically into this PDF builder to generate a multi-page PDF.</p>
-                        </div>
-                        <label class="cursor-pointer px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold flex items-center gap-2 self-start sm:self-auto shadow-sm transition-colors">
-                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                            <span>Add Images to PDF Builder</span>
-                            <input type="file" accept="image/*" multiple class="hidden" onchange="handleImg2PdfUpload(event)" />
-                        </label>
-                    </div>
+        function preparePdfImageDataUrl(img, maxDimension = 1400, quality = 0.7) {
+            let targetW = img.naturalWidth || img.width;
+            let targetH = img.naturalHeight || img.height;
 
-                    ${st.images.length === 0 ? `
-                        <label class="cursor-pointer border-2 border-dashed border-slate-300 hover:border-red-500 rounded-2xl p-10 text-center flex flex-col items-center justify-center bg-slate-50/70 transition-colors">
-                            <div class="w-14 h-14 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mb-3">
-                                <i data-lucide="file-image" class="w-7 h-7"></i>
-                            </div>
-                            <span class="font-bold text-sm text-slate-800">Upload images specifically for Image-to-PDF</span>
-                            <span class="text-xs text-slate-500 mt-1">Select single or multiple JPG/PNG images (Isolated to this tool)</span>
-                            <input type="file" accept="image/*" multiple class="hidden" onchange="handleImg2PdfUpload(event)" />
-                        </label>
-                    ` : `
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                            <div class="md:col-span-8 space-y-3">
-                                <div class="flex items-center justify-between text-xs text-slate-600">
-                                    <span class="font-bold">${st.images.length} Page(s) Queued in PDF Builder</span>
-                                    <button onclick="isolatedToolStates['pdf-img2pdf'].images=[]; renderSpecificToolWorkspace('pdf-img2pdf');" class="text-red-600 font-semibold hover:underline">Clear All</button>
-                                </div>
-                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                    ${st.images.map((item, idx) => `
-                                        <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between">
-                                            <div class="h-28 rounded-lg bg-white border border-slate-200 flex items-center justify-center overflow-hidden mb-2">
-                                                <img src="${item.dataUrl}" class="max-h-full max-w-full object-contain" />
-                                            </div>
-                                            <div class="flex items-center justify-between text-[11px]">
-                                                <span class="font-bold text-slate-700">Page ${idx + 1}</span>
-                                                <button onclick="removeImg2PdfItem(${idx})" class="text-red-500 hover:text-red-700">Remove</button>
-                                            </div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
+            if (targetW > maxDimension || targetH > maxDimension) {
+                const scale = Math.min(maxDimension / targetW, maxDimension / targetH);
+                targetW = Math.max(1, Math.round(targetW * scale));
+                targetH = Math.max(1, Math.round(targetH * scale));
+            }
 
-                            <div class="md:col-span-4 space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                                <div class="text-xs font-bold uppercase tracking-wider text-slate-700">PDF Page Settings</div>
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-700 mb-1">Page Orientation</label>
-                                    <select onchange="isolatedToolStates['pdf-img2pdf'].orientation = this.value" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-semibold">
-                                        <option value="portrait" ${st.orientation === 'portrait' ? 'selected' : ''}>Portrait (Vertical A4)</option>
-                                        <option value="landscape" ${st.orientation === 'landscape' ? 'selected' : ''}>Landscape (Horizontal A4)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-700 mb-1">Page Margin (mm)</label>
-                                    <input type="number" min="0" max="40" value="${st.margin}" onchange="isolatedToolStates['pdf-img2pdf'].margin = Number(this.value)"
-                                        class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-semibold" />
-                                </div>
-                                <button onclick="generatePdfFromImages()" class="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm">
-                                    <i data-lucide="file-down" class="w-4 h-4"></i>
-                                    <span>Generate & Download PDF</span>
-                                </button>
-                            </div>
-                        </div>
-                    `}
-                </div>
-            `;
+            const canvas = document.createElement('canvas');
+            canvas.width = targetW;
+            canvas.height = targetH;
+
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, targetW, targetH);
+            ctx.drawImage(img, 0, 0, targetW, targetH);
+
+            return {
+                dataUrl: canvas.toDataURL('image/jpeg', quality),
+                width: targetW,
+                height: targetH
+            };
         }
 
         function handleImg2PdfUpload(e) {
@@ -2630,11 +2583,12 @@
                 reader.onload = (ev) => {
                     const img = new Image();
                     img.onload = () => {
+                        const prepared = preparePdfImageDataUrl(img, 1400, 0.7);
                         isolatedToolStates['pdf-img2pdf'].images.push({
                             name: file.name,
-                            dataUrl: ev.target.result,
-                            width: img.naturalWidth,
-                            height: img.naturalHeight
+                            dataUrl: prepared.dataUrl,
+                            width: prepared.width,
+                            height: prepared.height
                         });
                         loaded++;
                         if (loaded === files.length) {
@@ -2661,7 +2615,7 @@
                 const doc = new jsPDF({
                     orientation: st.orientation,
                     unit: 'mm',
-                    format: 'a4'
+                    format: 'a4',                     compress: true
                 });
 
                 const pageW = doc.internal.pageSize.getWidth();
@@ -2683,7 +2637,7 @@
                     }
                     const x = margin + (availW - drawW) / 2;
                     const y = margin + (availH - drawH) / 2;
-                    doc.addImage(item.dataUrl, 'JPEG', x, y, drawW, drawH);
+                    doc.addImage(item.dataUrl, 'JPEG', x, y, drawW, drawH, undefined, 'MEDIUM');
                 });
 
                 doc.save('ToolBazaar-Images.pdf');
